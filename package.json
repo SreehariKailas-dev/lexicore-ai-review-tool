@@ -1,3 +1,7 @@
+"scripts": {
+  "start": "node server.js"
+}
+
 {
   "name": "lexicore-ai-backend",
   "version": "1.0.0",
