@@ -42,8 +42,8 @@ const fileUploadRoute = require('./routes/fileUploadRoute');
 const reviewRoute = require('./routes/reviewRoute');
 app.use('/api/upload', fileUploadRoute);
 
-// Shortcut for greetings in review route
-app.post('/api/review/:projectId', async (req, res, next) => {
+// Greeting shortcut
+app.post('/api/review/:projectId', (req, res, next) => {
   const greetings = ['hi', 'hello', 'hey', 'yo'];
   const prompt = req.body?.prompt || '';
   if (prompt && greetings.includes(prompt.toLowerCase().trim())) {
@@ -75,7 +75,7 @@ app.get('/projects.json', (req, res) => {
   });
 });
 
-// Fallback – Serve index.html for all unknown GET routes (SPA support)
+// Fallback – SPA support
 app.get('*', (req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));
 });
