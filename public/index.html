@@ -1,0 +1,462 @@
+<!--
+  LexiCore AI – Project Review Tool
+  Version: 1.1.0
+  Release Date: 14-Aug-2025
+  Description: Frontend UI for project management and PDF upload.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LexiCore AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .lexicore-logo {
+      width: 40px;
+      height: 40px;
+      border: 2px solid #00BFFF;
+      border-radius: 50%;
+      position: relative;
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    .lexicore-logo::before {
+      content: '';
+      position: absolute;
+      top: 25%;
+      left: 25%;
+      width: 50%;
+      height: 50%;
+      background: #00BFFF;
+      border-radius: 50%;
+      animation: inner-pulse 2s infinite ease-in-out;
+    }
+
+    .logo-text-wrapper {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .logo-text {
+      font-size: 1rem;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      color: white;
+      line-height: 1.1;
+    }
+
+    .state-indicator {
+      font-size: 0.7rem;
+      color: #cccccc;
+      text-transform: uppercase;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); box-shadow: 0 0 5px #00BFFF; }
+      50% { transform: scale(1.1); box-shadow: 0 0 10px #00BFFF; }
+      100% { transform: scale(1); box-shadow: 0 0 5px #00BFFF; }
+    }
+
+    @keyframes inner-pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(0.8); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* State Colors */
+    .thinking .lexicore-logo {
+      border-color: #FF8C00;
+    }
+    .thinking .lexicore-logo::before {
+      background: #FF8C00;
+    }
+    .writing .lexicore-logo {
+      border-color: #32CD32;
+    }
+    .writing .lexicore-logo::before {
+      background: #32CD32;
+    }
+    .searching .lexicore-logo {
+      border-color: #9370DB;
+    }
+    .searching .lexicore-logo::before {
+      background: #9370DB;
+    }
+
+    /* Typing animation */
+    .typing-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 24px;
+      padding: 0 8px;
+      margin-top: 6px;
+    }
+
+    .typing-indicator span {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background-color: #ccc;
+      border-radius: 50%;
+      animation: typing-bounce 1.2s infinite ease-in-out;
+    }
+
+    .typing-indicator span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .typing-indicator span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typing-bounce {
+      0%, 80%, 100% {
+        transform: translateY(0);
+        opacity: 0.3;
+      }
+      40% {
+        transform: translateY(-6px);
+        opacity: 1;
+      }
+    }
+
+    /* Chat container flex setup */
+main {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* full viewport height */
+  padding: 16px;
+}
+
+/* Chat messages area */
+#chatPreview {
+  flex-grow: 1;        /* take available space */
+  overflow-y: auto;    /* enable only one vertical scroll */
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Chat input fixed at bottom */
+.chat-input-wrapper {
+  flex-shrink: 0; /* prevent shrinking */
+  display: flex;
+  justify-content: center;
+}
+/* Chat area scrollbar */
+#chatPreview::-webkit-scrollbar {
+  width: 8px;                 /* width of the scrollbar */
+}
+
+#chatPreview::-webkit-scrollbar-track {
+  background: #1f1f1f;        /* track color */
+  border-radius: 4px;
+}
+
+#chatPreview::-webkit-scrollbar-thumb {
+  background: #00BFFF;        /* thumb color */
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+#chatPreview::-webkit-scrollbar-thumb:hover {
+  background: #1E90FF;        /* hover effect */
+}
+/* Firefox scrollbar */
+#chatPreview {
+  scrollbar-width: thin;       /* thin scrollbar */
+  scrollbar-color: #00BFFF #1f1f1f; /* thumb + track */
+}
+#chatPreview {
+  padding-right: 12px;       /* create space for scrollbar */
+  overflow-y: auto;          /* keep vertical scroll */
+  scroll-behavior: smooth;   /* smooth scrolling when new messages appear */
+}
+
+  </style>
+</head>
+<body class="bg-black text-white min-h-screen flex">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-gray-950 p-4 space-y-4 flex flex-col">
+    <!-- Logo Section -->
+    <div class="flex items-center justify-between mb-6">
+      <div class="logo-container" id="logoWrapper">
+        <div class="lexicore-logo"></div>
+        <div class="logo-text-wrapper">
+          <div class="logo-text">PALSCore AI</div>
+          <div class="state-indicator" id="stateText">Loading...</div>
+        </div>
+      </div>
+      <button id="addTaskBtn" class="bg-gray-800 px-3 py-1 rounded-full hover:bg-gray-700">+</button>
+    </div>
+    <!-- Task List -->
+    <div id="taskList" class="space-y-2 flex-1 overflow-y-auto"></div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col justify-between px-6 py-4">
+    <!-- Chat Area -->
+    <div id="chatPreview" class="flex-1 overflow-y-auto mb-4 space-y-4">
+      <p class="text-xl text-gray-400 text-center mt-8">Select a project to preview and review it here.</p>
+      <!-- Typing indicator -->
+      <div id="typing" class="typing-indicator" style="display: none;">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+      <!-- Chat Input -->
+    <div class="chat-input-wrapper">
+      <div class="flex items-center bg-gray-800 rounded-full px-4 py-2 w-full max-w-2xl">
+        <input id="chatInput" class="bg-transparent text-white outline-none flex-grow px-2" placeholder="Type your message..." />
+        <button id="sendBtn" class="ml-2 text-white hover:text-blue-400 px-3 py-1">Send</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal -->
+<div id="taskModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50">
+  <div class="bg-gray-900 p-6 rounded-2xl w-full max-w-lg">
+    <h3 class="text-xl font-semibold mb-4">Add New Project</h3>
+    <div class="space-y-4">
+      <input id="projectName" type="text" placeholder="Project Name" class="w-full bg-gray-800 text-white px-4 py-2 rounded-lg" />
+      <input id="searchQuery" type="text" placeholder="What should the AI find?" class="w-full bg-gray-800 text-white px-4 py-2 rounded-lg" />
+      <div>
+        <label class="block mb-2">Upload PDF</label>
+        <input type="file" id="pdfFile" name="file" accept="application/pdf">
+      </div>
+      <div class="flex justify-end space-x-4">
+        <button id="cancelBtn" class="bg-gray-700 px-4 py-2 rounded-lg">Cancel</button>
+        <button id="saveBtn" type="button" class="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-500">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const addBtn = document.getElementById('addTaskBtn');
+  const taskModal = document.getElementById('taskModal');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const saveBtn = document.getElementById('saveBtn');
+  const taskList = document.getElementById('taskList');
+  const chatPreview = document.getElementById('chatPreview');
+  const typing = document.getElementById('typing');
+  const sendBtn = document.getElementById('sendBtn');
+  const input = document.getElementById('chatInput');
+  const mainLogoWrapper = document.getElementById('logoWrapper');
+  const stateText = document.getElementById('stateText');
+  const pdfFileInput = document.getElementById('pdfFile');
+  const descriptionInput = document.getElementById('projectDescription'); // optional
+
+  let currentProjectId = null;
+
+  // Show/Hide modal
+  addBtn.onclick = () => taskModal.classList.remove('hidden');
+  cancelBtn.onclick = () => taskModal.classList.add('hidden');
+
+  // Fetch projects
+  async function fetchProjects() {
+    try {
+      const res = await fetch('http://localhost:3001/projects.json?_=' + Date.now());
+      if (!res.ok) throw new Error('Failed to fetch projects');
+      return await res.json();
+    } catch (err) {
+      console.error('❌ Error fetching projects:', err);
+      return [];
+    }
+  }
+
+  // Render projects in sidebar
+  async function renderProjects() {
+    const projects = await fetchProjects();
+    taskList.innerHTML = '';
+
+    projects.forEach(({ id, name, query, filePath }) => {
+      const card = document.createElement('div');
+      card.className = "bg-gray-800 p-4 rounded-xl hover:bg-gray-700 cursor-pointer flex justify-between items-center";
+
+      const nameDiv = document.createElement('span');
+      nameDiv.textContent = name;
+
+      const link = document.createElement('a');
+      link.href = `http://localhost:3001${encodeURI(filePath)}`;
+      link.target = "_blank";
+      link.textContent = "📄";
+      link.className = "ml-2 text-blue-400";
+
+      card.appendChild(nameDiv);
+      card.appendChild(link);
+
+      card.onclick = async () => {
+        currentProjectId = id;
+        chatPreview.innerHTML = `<p class='text-xl text-gray-400 text-center'>
+          Reviewing <strong>${name}</strong><br>
+          <span class='text-sm'>Looking for: ${query}</span>
+        </p>`;
+        fetchAIResponse(id);
+      };
+
+      taskList.appendChild(card);
+    });
+  }
+
+  // Save project
+  saveBtn.onclick = async (event) => {
+    event.preventDefault();
+    const name = document.getElementById('projectName').value.trim();
+    const query = document.getElementById('searchQuery').value.trim();
+    const description = descriptionInput ? descriptionInput.value.trim() : '';
+    const file = pdfFileInput.files[0];
+
+    if (!name || !query || !file) {
+      alert("Please fill all required fields and upload a PDF");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('pdfFile', file);
+    formData.append('name', name);
+    formData.append('query', query);
+    formData.append('description', description);
+
+    try {
+      const res = await fetch('http://localhost:3001/api/upload', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
+      await renderProjects();
+      taskModal.classList.add('hidden');
+      document.getElementById('projectName').value = '';
+      document.getElementById('searchQuery').value = '';
+      if (descriptionInput) descriptionInput.value = '';
+      pdfFileInput.value = '';
+
+      alert('✅ PDF uploaded and project added!');
+    } catch (err) {
+      console.error('❌ Upload failed:', err);
+      alert('Upload failed. Check console for error.');
+    }
+  };
+
+  // Create AI message element with animated logo
+ // Create AI message element with animated logo
+function createBotMessage(message) {
+  const botMsg = document.createElement('div');
+  botMsg.className = 'flex items-start gap-3 mt-2 max-w-md'; // increased gap
+
+  // Logo container
+  const logoDiv = document.createElement('div');
+  logoDiv.className = 'lexicore-logo';
+  logoDiv.style.flexShrink = '0';
+  logoDiv.style.width = '40px';
+  logoDiv.style.height = '40px';
+  logoDiv.style.marginTop = '4px'; // align vertically a bit better
+  logoDiv.style.marginLeft = '10px'; // align vertically a bit better
+
+  botMsg.appendChild(logoDiv);
+
+  // Message text
+  const textDiv = document.createElement('div');
+  textDiv.className = 'bg-gray-800 text-white px-4 py-2 rounded-lg ml-1'; // add slight left margin
+  textDiv.style.wordBreak = 'break-word'; // prevent overflow for long text
+  textDiv.textContent = message;
+
+  botMsg.appendChild(textDiv);
+  chatPreview.appendChild(botMsg);
+
+  // Auto scroll to bottom
+  chatPreview.scrollTop = chatPreview.scrollHeight;
+}
+
+
+  // Fetch AI response for a project
+  async function fetchAIResponse(projectId) {
+    typing.style.display = 'inline-flex';
+    mainLogoWrapper.classList.add('writing');
+    stateText.textContent = 'Analyzing...';
+
+    try {
+      const res = await fetch(`http://localhost:3001/api/review/${projectId}`);
+      if (!res.ok) throw new Error('Failed to get AI response');
+      const data = await res.json();
+      createBotMessage(data.message);
+    } catch (err) {
+      console.error('❌ AI fetch error:', err);
+      createBotMessage("Could not fetch response");
+    } finally {
+      typing.style.display = 'none';
+      mainLogoWrapper.classList.remove('writing');
+      stateText.textContent = 'Idle';
+    }
+  }
+
+  // Send chat message
+  sendBtn.onclick = async () => {
+    const value = input.value.trim();
+    if (!value || !currentProjectId) return;
+
+    // User message
+    const userMsg = document.createElement('div');
+    userMsg.className = 'flex justify-end mt-2';
+    userMsg.innerHTML = `<div class="bg-blue-600 text-white px-4 py-2 rounded-lg max-w-md">${value}</div>`;
+    chatPreview.appendChild(userMsg);
+    chatPreview.scrollTop = chatPreview.scrollHeight;
+
+    typing.style.display = 'inline-flex';
+    mainLogoWrapper.classList.add('writing');
+    stateText.textContent = 'Writing...';
+
+    try {
+      const res = await fetch(`http://localhost:3001/api/review/${currentProjectId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: value })
+      });
+      if (!res.ok) throw new Error('AI request failed');
+      const data = await res.json();
+      createBotMessage(data.message);
+    } catch (err) {
+      console.error('❌ AI chat error:', err);
+      createBotMessage("Could not fetch response");
+    } finally {
+      typing.style.display = 'none';
+      mainLogoWrapper.classList.remove('writing');
+      stateText.textContent = 'Idle';
+      input.value = '';
+    }
+  };
+
+  // Shift+Enter for newline
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendBtn.click();
+    }
+  });
+
+  // Initial render
+  renderProjects();
+});
+</script>
+
+
+</body>
+</html>
