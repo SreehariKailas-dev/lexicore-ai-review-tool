@@ -1,6 +1,6 @@
 /**
  * LexiCore AI – Project Review Tool
- * Version: 1.1.1
+ * Version: 1.1.2
  * Release Date: 14-Aug-2025
  * Description: Main backend entry point for LexiCore AI – serves frontend, handles API routes.
  */
@@ -19,15 +19,23 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Easier for dev/Render static serving
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Paths
+const publicPath = path.resolve(__dirname, 'public');
+const uploadsPath = path.resolve(__dirname, 'uploads');
+
 // Serve static frontend
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(publicPath));
 
 // Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(uploadsPath));
 
 // Routes
 const fileUploadRoute = require('./routes/fileUploadRoute');
@@ -39,7 +47,9 @@ app.post('/api/review/:projectId', async (req, res, next) => {
   const greetings = ['hi', 'hello', 'hey', 'yo'];
   const prompt = req.body?.prompt || '';
   if (prompt && greetings.includes(prompt.toLowerCase().trim())) {
-    return res.json({ message: 'Hey there! How can I help you with your project today?' });
+    return res.json({
+      message: 'Hey there! How can I help you with your project today?',
+    });
   }
   next();
 });
@@ -49,7 +59,7 @@ app.use('/api/review', reviewRoute);
 
 // Serve projects.json
 app.get('/projects.json', (req, res) => {
-  const projectsFile = path.join(__dirname, 'projects.json');
+  const projectsFile = path.resolve(__dirname, 'projects.json');
   if (!fs.existsSync(projectsFile)) return res.json([]);
   fs.readFile(projectsFile, 'utf8', (err, data) => {
     if (err) {
@@ -66,8 +76,8 @@ app.get('/projects.json', (req, res) => {
 });
 
 // Fallback – Serve index.html for all unknown GET routes (SPA support)
-app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 // Global error handler
